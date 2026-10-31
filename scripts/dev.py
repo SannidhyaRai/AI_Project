@@ -20,6 +20,8 @@ def main() -> None:
     if not (ROOT / "web" / "node_modules").exists():
         subprocess.run([npm, "install"], cwd=ROOT / "web", check=True)
 
+    # Without this, a GEMINI_API_KEY in .env is ignored and explanations silently use the mock.
+    env_file = ["--env-file", ".env"] if (ROOT / ".env").exists() else []
     api = subprocess.Popen(
         [
             sys.executable,
@@ -31,6 +33,7 @@ def main() -> None:
             "dnb",
             "--port",
             "8000",
+            *env_file,
         ],
         cwd=ROOT,
     )
