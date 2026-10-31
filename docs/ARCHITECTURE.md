@@ -68,8 +68,9 @@ Bots are created from text specs: `"random"`, `"greedy:randomness=0.3"`, `"minim
 | POST | `/api/games` | P5 | working |
 | GET  | `/api/games/{id}` | P5 | working |
 | POST | `/api/games/{id}/move` | P5 | working (bot replies, including extra turns) |
-| GET  | `/api/games/{id}/hint` | P4 + P5 | 501 stub |
-| GET  | `/api/games/{id}/review` | P4 + P5 | 501 stub |
+| GET  | `/api/games/{id}/hint` | P4 + P5 | working (best move, needs a bot search) |
+| GET  | `/api/games/{id}/danger` | P4 + P5 | working (no search, cheap enough for every turn) |
+| GET  | `/api/games/{id}/review` | P4 + P5 | working (finished games, cached per game) |
 | GET  | `/api/players/{id}/stats` | P3 + P5 | to add |
 
 `schemas.py` and `web/src/api.ts` must change in the **same PR**. Finished games go to the SQLite
@@ -85,4 +86,5 @@ Bots must work on any size from 1×1 to 7×7, and difficulty levels may also cha
 `dnb/coach/explain.py` has an `LLMProvider` interface with `MockProvider` (used by tests and CI)
 and `GeminiProvider` (used when `GEMINI_API_KEY` is set in `.env`). The prompt only gets
 **facts computed by the review** (which move, which better move, how many boxes it gave away), so
-the LLM rephrases what happened rather than analysing the game itself.
+the LLM rephrases what happened rather than analysing the game itself. If the call fails or the
+answer contradicts those facts, a template sentence built from the same facts is shown instead.

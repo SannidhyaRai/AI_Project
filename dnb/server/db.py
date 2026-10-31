@@ -10,6 +10,7 @@ import json
 import os
 import sqlite3
 from pathlib import Path
+from typing import Any
 
 DB_PATH = Path(os.environ.get("DNB_DB_PATH", "data/games.sqlite"))
 
@@ -75,3 +76,13 @@ def save_game(
                 result,
             ),
         )
+
+
+def load_game(conn: sqlite3.Connection, game_id: str) -> dict[str, Any] | None:
+    """One saved game with `moves` decoded to [(player, edge)], or None if there is no such game."""
+    row = conn.execute("SELECT * FROM games WHERE id = ?", (game_id,)).fetchone()
+    if row is None:
+        return None
+    game = dict(row)
+    game["moves"] = [(player, edge) for player, edge in json.loads(game["moves"])]
+    return game
