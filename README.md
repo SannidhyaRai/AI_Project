@@ -40,3 +40,5 @@ Read these before your first PR:
 - [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md): how the parts fit, and the contracts.
 - [CONTRIBUTING.md](CONTRIBUTING.md): branches, PRs, reviews.
 - [docs/ROADMAP.md](docs/ROADMAP.md): the 20-day plan and each person's task list.
+- [docs/PERSON1_HANDOFF.md](docs/PERSON1_HANDOFF.md): engine and classic bots, usage, contracts,
+  tests, measurements and integration notes for teammates.

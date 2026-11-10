@@ -13,12 +13,15 @@ Each phase is a GitHub milestone. Each checkbox below becomes an issue labelled 
 contracts. After day 3 they are frozen.
 
 ## Person 1: Engine and classic bots
-- [ ] Review and own the engine; add more rule tests (edge cases, 1×N boards)
-- [ ] Greedy bot (`dnb/bots/greedy.py`), including the `randomness` option for Easy levels. **Ship by day 4, others need it.**
-- [ ] Minimax + alpha-beta (`dnb/bots/minimax.py`). Handle the extra-turn rule!
-- [ ] Depth setting; measure time per move at each depth on 3×3 and 4×4
-- [ ] Done: minimax beats greedy in most games
+- [x] Review and own the engine; add more rule tests (edge cases, 1×N boards)
+- [x] Greedy bot (`dnb/bots/greedy.py`), including the `randomness` option for Easy levels. **Ship by day 4, others need it.**
+- [x] Minimax + alpha-beta (`dnb/bots/minimax.py`). Handle the extra-turn rule!
+- [x] Depth setting; measure time per move at each depth on 3×3 and 4×4
+- [x] Done: minimax beats greedy in most games (depth 4: 64/100 wins on 3×3; 60/100 on 4×4)
 - [ ] Stretch: smarter evaluation (chain counting), faster engine internals
+
+Implementation and integration notes: [Person 1 handoff](PERSON1_HANDOFF.md).
+Recorded measurements: [Person 1 results](report/PERSON1_RESULTS.md).
 
 ## Person 2: Monte Carlo and arena
 - [ ] Monte Carlo bot (`dnb/bots/montecarlo.py`) with random playouts
