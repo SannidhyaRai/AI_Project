@@ -1,0 +1,9 @@
+{
+  "rows": 1,
+  "cols": 2,
+  "drawn": [0, 2, 4, 1, 3],
+  "current_player": 1,
+  "note": "Edge 5 captures the left box and keeps the turn; edge 6 then captures the right box. Playing 6 first loses both boxes.",
+  "best_moves": [5],
+  "bad_moves": [6]
+}
