@@ -1,0 +1,9 @@
+{
+  "rows": 1,
+  "cols": 2,
+  "drawn": [0, 2, 4, 1, 3],
+  "current_player": 1,
+  "note": "Edge 5 completes box 0 and makes box 1 3-sided, but the same player moves again and takes both. Edge 6 completes nothing and hands both boxes to the opponent.",
+  "best_moves": [5],
+  "bad_moves": [6]
+}

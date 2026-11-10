@@ -1,0 +1,9 @@
+{
+  "rows": 2,
+  "cols": 2,
+  "drawn": [0, 6],
+  "current_player": 0,
+  "note": "Box 0 has 2 sides. Edges 2 and 7 would make it 3-sided, which gives the opponent a free box.",
+  "best_moves": [],
+  "bad_moves": [2, 7]
+}
