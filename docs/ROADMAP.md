@@ -41,13 +41,16 @@ Recorded measurements: [Person 1 results](report/PERSON1_RESULTS.md).
 - [ ] Stretch: human-like mistakes
 
 ## Person 4: Hints and review
-- [ ] Danger highlight: moves that leave a 3-sided box (works with just the engine, so start here)
-- [ ] Hint: best move from the strongest bot
-- [ ] Move review: Good / Okay / Mistake using `evaluate_moves`
-- [ ] LLM explanations with Gemini, fact-only prompts, MockProvider in tests
-- [ ] `/hint` and `/review` endpoints with Person 5
+- [x] Danger highlight: moves that leave a 3-sided box (works with just the engine, so start here)
+- [x] Hint: best move from the strongest bot (minimax for now; revisit after the arena)
+- [x] Move review: Good / Okay / Mistake using `evaluate_moves`
+- [x] LLM explanations with Gemini, fact-only prompts, MockProvider in tests
+- [x] `/hint` and `/review` endpoints with Person 5 (plus `/danger`, cheap enough for every turn)
 - [ ] Done: hints and review work in the app; explanations match what happened
 - [ ] Stretch: move-quality heatmap
+
+Hints and reviews use minimax with its depth picked per position (`dnb/coach/hints.py`): about a
+second at most per hint on 2x2 to 7x7 boards, and a few seconds for a full 4x4 or 5x5 review.
 
 ## Person 5: Web app, server, integration
 - [ ] Set up GitHub: branch protection, CODEOWNERS usernames, project board, milestones
