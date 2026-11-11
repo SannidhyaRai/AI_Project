@@ -6,16 +6,29 @@ Docs: http://localhost:8000/docs
 
 from __future__ import annotations
 
+import threading
 import uuid
 from contextlib import closing
-from dataclasses import dataclass, field
+from dataclasses import asdict, dataclass, field
 
 from fastapi import APIRouter, FastAPI, HTTPException
 
 from dnb.bots import BOTS, Bot, make_bot
+from dnb.coach.explain import explain_mistakes
+from dnb.coach.hints import dangerous_moves, hint
+from dnb.coach.review import review_game
 from dnb.engine import GameState, IllegalMoveError
 from dnb.server import db
-from dnb.server.schemas import GameOut, MoveRequest, NewGameRequest, PlayedMove
+from dnb.server.schemas import (
+    DangerOut,
+    GameOut,
+    HintOut,
+    MoveRequest,
+    MoveReviewOut,
+    NewGameRequest,
+    PlayedMove,
+    ReviewOut,
+)
 
 
 @dataclass
@@ -32,6 +45,11 @@ class Session:
 
 # Live games live in memory; finished games are saved to SQLite.
 GAMES: dict[str, Session] = {}
+
+# A review can be slow and spends LLM calls, so each game is only reviewed once. The lock covers
+# two requests arriving together, which React StrictMode does in dev.
+REVIEWS: dict[str, ReviewOut] = {}
+REVIEW_LOCK = threading.Lock()
 
 app = FastAPI(title="Dots and Boxes AI")
 api = APIRouter(prefix="/api")
@@ -84,6 +102,20 @@ def _get(game_id: str) -> Session:
     return GAMES[game_id]
 
 
+def _finished_game(game_id: str) -> tuple[int, int, list[tuple[int, int]], int]:
+    """(rows, cols, moves, human_player), from SQLite if the server has restarted since the game."""
+    if game_id in GAMES:
+        s = GAMES[game_id]
+        if not s.state.is_over():
+            raise HTTPException(409, "the game is not finished")
+        return s.state.rows, s.state.cols, s.moves, s.human_player
+    with closing(db.connect()) as conn:
+        game = db.load_game(conn, game_id)
+    if game is None:
+        raise HTTPException(404, "game not found")
+    return game["rows"], game["cols"], game["moves"], game["human_player"]
+
+
 @api.get("/bots")
 def list_bots() -> list[str]:
     return sorted(BOTS)
@@ -128,15 +160,34 @@ def play_move(game_id: str, req: MoveRequest) -> GameOut:
 
 
 @api.get("/games/{game_id}/hint")
-def get_hint(game_id: str):
-    # TODO(P4+P5): return dnb.coach.hints.hint() and dangerous_moves() for the current state.
-    raise HTTPException(501, "hints not implemented yet (Person 4)")
+def get_hint(game_id: str) -> HintOut:
+    s = _get(game_id)
+    if s.state.is_over() or s.state.current_player != s.human_player:
+        raise HTTPException(409, "not your turn")
+    result = hint(s.state)
+    return HintOut(move=result.move, score=result.score)
+
+
+@api.get("/games/{game_id}/danger")
+def get_danger(game_id: str) -> DangerOut:
+    # Separate from /hint because it needs no bot search, so the UI can call it every turn.
+    return DangerOut(edges=dangerous_moves(_get(game_id).state))
 
 
 @api.get("/games/{game_id}/review")
-def get_review(game_id: str):
-    # TODO(P4+P5): return dnb.coach.review.review_game() + explain_mistakes().
-    raise HTTPException(501, "review not implemented yet (Person 4)")
+def get_review(game_id: str) -> ReviewOut:
+    with REVIEW_LOCK:
+        if game_id not in REVIEWS:
+            rows, cols, moves, human = _finished_game(game_id)
+            reviews = review_game(rows, cols, moves, human)
+            explanations = explain_mistakes(reviews)
+            REVIEWS[game_id] = ReviewOut(
+                game_id=game_id,
+                moves=[
+                    MoveReviewOut(**asdict(r), explanation=explanations.get(r.ply)) for r in reviews
+                ],
+            )
+        return REVIEWS[game_id]
 
 
 # TODO(P3+P5): GET /api/players/{player_id}/stats -> dnb.difficulty.stats.compute_stats()

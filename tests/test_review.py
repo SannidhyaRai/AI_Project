@@ -130,6 +130,13 @@ def test_default_bot_reviews_a_full_game():
     assert [r.label for r in reviews] == ["good", "good"]
 
 
+def test_default_bot_catches_a_blunder():
+    moves = [(0, 0), (1, 2), (0, 4), (1, 1), (0, 3), (1, 6), (0, 5)]
+    review = review_game(1, 2, moves, human=1)[-1]
+    assert review.label == "mistake"
+    assert review.best_move == 5
+
+
 def test_moves_played_out_of_turn_are_rejected():
     with pytest.raises(ValueError):
         review_game(2, 2, [(0, 0), (0, 1)], human=0, bot=FixedScores({}))

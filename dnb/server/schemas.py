@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+from typing import Literal
+
 from pydantic import BaseModel, Field
 
 
@@ -35,3 +37,30 @@ class GameOut(BaseModel):
     scores: list[int]
     is_over: bool
     winner: int | None
+
+
+class HintOut(BaseModel):
+    move: int
+    score: float  # [-1, 1], higher is better for the player to move
+
+
+class DangerOut(BaseModel):
+    edges: list[int]  # legal moves that would leave a box with 3 sides
+
+
+class MoveReviewOut(BaseModel):
+    ply: int  # index into GameOut.moves
+    move: int
+    best_move: int  # same as move when the played move ties for best
+    score: float
+    best_score: float
+    label: Literal["good", "okay", "mistake"]
+    boxes_taken: int
+    boxes_given_away: int
+    left_three_sided: bool
+    explanation: str | None = None  # only the 2-3 biggest mistakes have one
+
+
+class ReviewOut(BaseModel):
+    game_id: str
+    moves: list[MoveReviewOut]  # the human's moves only

@@ -19,6 +19,33 @@ export interface Game {
   winner: number | null;
 }
 
+export interface Hint {
+  move: number;
+  score: number; // [-1, 1], higher is better for the player to move
+}
+
+export interface Danger {
+  edges: number[]; // legal moves that would leave a box with 3 sides
+}
+
+export interface MoveReview {
+  ply: number; // index into Game.moves
+  move: number;
+  best_move: number; // same as move when the played move ties for best
+  score: number;
+  best_score: number;
+  label: "good" | "okay" | "mistake";
+  boxes_taken: number;
+  boxes_given_away: number;
+  left_three_sided: boolean;
+  explanation: string | null; // only the 2-3 biggest mistakes have one
+}
+
+export interface Review {
+  game_id: string;
+  moves: MoveReview[]; // the human's moves only
+}
+
 export interface NewGameRequest {
   rows?: number;
   cols?: number;
@@ -46,5 +73,8 @@ export const api = {
     request<Game>("/games", { method: "POST", body: JSON.stringify(req) }),
   move: (id: string, edge: number) =>
     request<Game>(`/games/${id}/move`, { method: "POST", body: JSON.stringify({ edge }) }),
-  // TODO(P5): hint, review, stats once Persons 3 and 4 ship them.
+  hint: (id: string) => request<Hint>(`/games/${id}/hint`),
+  danger: (id: string) => request<Danger>(`/games/${id}/danger`),
+  review: (id: string) => request<Review>(`/games/${id}/review`),
+  // TODO(P5): stats once Person 3 ships it.
 };

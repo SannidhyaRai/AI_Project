@@ -5,17 +5,16 @@ from __future__ import annotations
 from dataclasses import dataclass
 from typing import Literal
 
-from dnb.bots import Bot, make_bot
-from dnb.coach.hints import HINT_BOT, TIE_TOLERANCE, is_dangerous
+from dnb.bots import Bot
+from dnb.coach.hints import TIE_TOLERANCE, coach_bot, is_dangerous
 from dnb.engine import GameState
 
 Label = Literal["good", "okay", "mistake"]
 
-REVIEW_BOT = HINT_BOT  # TODO(P4): use minimax once it exists; Monte Carlo scores change every run
-
-# Thresholds are in boxes of final margin (my boxes - their boxes), so they mean the same on every
-# board size. One box going to the opponent instead of you costs 2. This assumes minimax scores;
-# TODO(P4): recalibrate if REVIEW_BOT ends up on Monte Carlo's win-rate scale.
+# Thresholds are in boxes of margin (my boxes - their boxes), so they mean the same on every board
+# size. Minimax margins are whole boxes: 0 is good, 1 is okay, and 2 or more is a mistake, which is
+# the cost of one box going to the opponent instead of you. These need recalibrating if the review
+# ever uses Monte Carlo, whose scores are win rates instead.
 OKAY_MARGIN = 0.5
 MISTAKE_MARGIN = 2.0
 
@@ -72,14 +71,13 @@ def review_game(
     rows: int, cols: int, moves: list[tuple[int, int]], human: int, bot: Bot | None = None
 ) -> list[MoveReview]:
     """moves: (player, edge) in order. Reviews only the human's moves."""
-    bot = bot or make_bot(REVIEW_BOT)
     states = _replay(rows, cols, moves)
     reviews = []
     for ply, (player, move) in enumerate(moves):
         if player != human:
             continue
         state = states[ply]
-        scores = bot.evaluate_moves(state)
+        scores = (bot or coach_bot(state)).evaluate_moves(state)
         best_move = max(scores, key=scores.__getitem__)
         score, best_score = scores[move], scores[best_move]
         reviews.append(
