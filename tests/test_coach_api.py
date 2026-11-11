@@ -46,7 +46,7 @@ def test_hint_returns_a_legal_move():
     resp = client.get(f"/api/games/{game['id']}/hint")
     assert resp.status_code == 200, resp.text
     assert resp.json()["move"] in range(12)
-    assert resp.json()["score"] == 0.0
+    assert -1.0 <= resp.json()["score"] <= 1.0
 
 
 def test_no_hint_after_the_game_ends():
@@ -88,12 +88,11 @@ def test_review_covers_only_the_humans_moves():
     human_plies = [i for i, m in enumerate(game["moves"]) if m["player"] == game["human_player"]]
     assert review["game_id"] == game["id"]
     assert [m["ply"] for m in review["moves"]] == human_plies
-    assert {m["label"] for m in review["moves"]} == {"good"}  # the random bot scores all moves 0
-    assert all(m["explanation"] is None for m in review["moves"])
+    assert all(m["explanation"] is None for m in review["moves"] if m["label"] != "mistake")
 
 
 def test_review_explains_only_the_biggest_mistakes(monkeypatch):
-    monkeypatch.setattr(review_module, "make_bot", lambda spec: HatesLowestEdge())
+    monkeypatch.setattr(review_module, "coach_bot", lambda state: HatesLowestEdge())
     game = finish(new_game())
     moves = client.get(f"/api/games/{game['id']}/review").json()["moves"]
     assert {m["label"] for m in moves} == {"mistake"}

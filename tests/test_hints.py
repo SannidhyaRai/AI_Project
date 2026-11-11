@@ -5,7 +5,14 @@ from pathlib import Path
 import pytest
 
 from dnb.bots import Bot
-from dnb.coach.hints import dangerous_moves, hint, is_dangerous
+from dnb.coach.hints import (
+    MIN_DEPTH,
+    coach_bot,
+    dangerous_moves,
+    hint,
+    is_dangerous,
+    search_depth,
+)
 from dnb.engine import GameState
 
 FIXTURES = Path(__file__).parent / "fixtures"
@@ -85,6 +92,30 @@ def test_hint_can_still_recommend_a_dangerous_move_that_scores_best():
 def test_default_hint_is_a_legal_move():
     state = GameState.new(2, 2)
     assert hint(state).move in state.legal_moves()
+
+
+def test_default_hint_finds_the_winning_move():
+    state, data = load_fixture("danger_completing_move_is_safe.json")
+    result = hint(state)
+    assert result.move in data["best_moves"]
+    assert result.score == 1.0
+
+
+def test_coach_uses_minimax():
+    assert coach_bot(GameState.new(3, 3)).name == "minimax"
+
+
+def test_search_looks_further_as_the_board_fills_up():
+    opening = GameState.new(3, 3)  # 24 moves left
+    late = position(*range(16), rows=3, cols=3)  # 8 moves left
+    assert search_depth(opening) == 4
+    assert search_depth(late) == 8
+
+
+def test_search_is_shallower_on_large_boards_but_never_below_the_minimum():
+    assert search_depth(GameState.new(5, 5)) == 3  # 60 edges: not a large board
+    assert search_depth(GameState.new(6, 6)) == MIN_DEPTH  # 84 moves left: depth 2, minus one
+    assert search_depth(GameState.new(7, 7)) == MIN_DEPTH
 
 
 def test_hint_rejects_a_finished_game():
