@@ -16,6 +16,9 @@ uv run python scripts/dev.py  # starts the API (:8000) and the web app (:5173)
 
 Open http://localhost:5173. API docs: http://localhost:8000/docs.
 
+For the presentation, `uv run python scripts/dev.py --demo` builds the web app once and serves
+everything from http://localhost:8000, with no auto-reload.
+
 Everyday commands:
 
 ```bash

@@ -1,89 +1,142 @@
-import { useEffect, useState } from "react";
-import { api, type Game } from "./api";
-import { Board } from "./Board";
+import { useCallback, useEffect, useState } from "react";
+import { ApiError, api, type Game, type GameSummary, type Level, type PlayerStats } from "./api";
+import { Play } from "./Play";
+import { Profile } from "./Profile";
+import { Review } from "./Review";
+import { useStored } from "./useStored";
+
+type Tab = "play" | "review" | "profile";
 
 export default function App() {
-  const [bots, setBots] = useState<string[]>(["random"]);
-  const [bot, setBot] = useState("random");
-  const [size, setSize] = useState(3);
-  const [game, setGame] = useState<Game | null>(null);
+  const [playerId, setPlayerId] = useStored("player", "guest");
+  const [nameDraft, setNameDraft] = useState(playerId);
+  const [tab, setTab] = useState<Tab>("play");
+  const [levels, setLevels] = useState<Level[]>([]);
+  const [bots, setBots] = useState<string[]>([]);
+  const [stats, setStats] = useState<PlayerStats | null>(null);
+  const [statsNote, setStatsNote] = useState<string | null>(null);
+  const [history, setHistory] = useState<GameSummary[]>([]);
+  const [reviewGame, setReviewGame] = useState<Game | null>(null);
   const [error, setError] = useState<string | null>(null);
-  const [busy, setBusy] = useState(false);
 
   useEffect(() => {
-    api.listBots().then(setBots).catch((e) => setError(String(e)));
+    Promise.all([api.listLevels(), api.listBots()])
+      .then(([l, b]) => {
+        setLevels(l);
+        setBots(b);
+      })
+      .catch((e) => setError(`Can't reach the server: ${e instanceof Error ? e.message : e}`));
   }, []);
 
-  async function run(action: () => Promise<Game>) {
-    setBusy(true);
-    setError(null);
+  const refreshPlayer = useCallback(() => {
+    api
+      .stats(playerId)
+      .then((s) => {
+        setStats(s);
+        setStatsNote(null);
+      })
+      .catch((e) => {
+        setStats(null);
+        setStatsNote(
+          e instanceof ApiError && e.status === 501
+            ? "Rating, level advice and detailed stats appear once the difficulty system is in."
+            : `Stats unavailable: ${e instanceof Error ? e.message : e}`,
+        );
+      });
+    api
+      .playerGames(playerId)
+      .then(setHistory)
+      .catch(() => setHistory([]));
+  }, [playerId]);
+
+  useEffect(refreshPlayer, [refreshPlayer]);
+
+  function commitName() {
+    const name = nameDraft.trim().slice(0, 40);
+    if (name) setPlayerId(name);
+    else setNameDraft(playerId);
+  }
+
+  function openReview(game: Game) {
+    setReviewGame(game);
+    setTab("review");
+  }
+
+  async function openSavedReview(gameId: string) {
     try {
-      setGame(await action());
+      openReview(await api.getGame(gameId));
     } catch (e) {
       setError(e instanceof Error ? e.message : String(e));
-    } finally {
-      setBusy(false);
     }
   }
 
-  const newGame = () => run(() => api.newGame({ rows: size, cols: size, bot }));
-  const move = (edge: number) => game && run(() => api.move(game.id, edge));
-
-  const you = game?.human_player ?? 0;
-  const yourTurn = !!game && !game.is_over && game.current_player === you;
-
   return (
-    <main>
-      <h1>
-        Dots and Boxes <span className="accent">AI</span>
-      </h1>
-
-      <section className="controls">
-        {/* TODO(P5+P3): difficulty picker (levels 1-5 + "auto") instead of raw bot specs */}
-        <label>
-          Bot{" "}
-          <select value={bot} onChange={(e) => setBot(e.target.value)}>
-            {bots.map((b) => (
-              <option key={b}>{b}</option>
-            ))}
-          </select>
+    <>
+      <header className="top">
+        <h1>
+          Dots and Boxes <span className="accent">AI</span>
+        </h1>
+        <nav>
+          <button className={tab === "play" ? "tab active" : "tab"} onClick={() => setTab("play")}>
+            Play
+          </button>
+          <button
+            className={tab === "review" ? "tab active" : "tab"}
+            onClick={() => setTab("review")}
+            disabled={!reviewGame}
+          >
+            Review
+          </button>
+          <button
+            className={tab === "profile" ? "tab active" : "tab"}
+            onClick={() => setTab("profile")}
+          >
+            Profile
+          </button>
+        </nav>
+        <label className="player-name">
+          Playing as
+          <input
+            value={nameDraft}
+            maxLength={40}
+            onChange={(e) => setNameDraft(e.target.value)}
+            onBlur={commitName}
+            onKeyDown={(e) => e.key === "Enter" && e.currentTarget.blur()}
+          />
         </label>
-        <label>
-          Size{" "}
-          <select value={size} onChange={(e) => setSize(Number(e.target.value))}>
-            {[2, 3, 4, 5].map((n) => (
-              <option key={n} value={n}>
-                {n}×{n}
-              </option>
-            ))}
-          </select>
-        </label>
-        <button onClick={newGame} disabled={busy}>
-          New game
-        </button>
-        {/* TODO(P5+P4): hint button + danger highlight, review screen after the game */}
-      </section>
+      </header>
 
-      {error && <p className="error">{error}</p>}
-
-      {game && (
-        <>
-          <p className="status">
-            <span className="p0">You {game.scores[you]}</span> ·{" "}
-            <span className="p1">Bot {game.scores[1 - you]}</span> —{" "}
-            {game.is_over
-              ? game.winner === null
-                ? "Draw!"
-                : game.winner === you
-                  ? "You win!"
-                  : "Bot wins."
-              : yourTurn
-                ? "Your move"
-                : "Bot is thinking…"}
+      <main>
+        {error && (
+          <p className="error" role="alert">
+            {error}
           </p>
-          <Board game={game} canMove={yourTurn && !busy} onMove={move} />
-        </>
-      )}
-    </main>
+        )}
+        {/* Play stays mounted while you look at other tabs, so a game in progress isn't lost. */}
+        <div hidden={tab !== "play"}>
+          <Play
+            playerId={playerId}
+            levels={levels}
+            bots={bots}
+            autoLevel={stats?.level ?? null}
+            onGameOver={refreshPlayer}
+            onReview={openReview}
+          />
+        </div>
+        {tab === "review" && reviewGame && (
+          <Review game={reviewGame} levels={levels} onPlayAgain={() => setTab("play")} />
+        )}
+        {tab === "profile" && (
+          <Profile
+            playerId={playerId}
+            levels={levels}
+            stats={stats}
+            statsNote={statsNote}
+            history={history}
+            onOpenReview={openSavedReview}
+          />
+        )}
+      </main>
+    </>
   );
 }

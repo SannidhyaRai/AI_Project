@@ -54,9 +54,10 @@ second at most per hint on 2x2 to 7x7 boards, and a few seconds for a full 4x4 o
 
 ## Person 5: Web app, server, integration
 - [ ] Set up GitHub: branch protection, CODEOWNERS usernames, project board, milestones
-- [ ] Board UI polish: scores, turn indicator, last move, box colours
-- [ ] Difficulty picker, hint button + danger overlay, review screen, profile screen
-- [ ] Server: level-based games, stats endpoint, hint/review wiring
-- [ ] Weekly integration check; `scripts/dev.py` one-command demo
+- [x] Board UI polish: scores, turn indicator, last move, box colours
+- [x] Difficulty picker, hint button + danger overlay, review screen, profile screen
+- [x] Server: level-based games, stats endpoint, hint/review wiring
+- [x] `scripts/dev.py` one-command demo (`--demo` serves everything on one port)
+- [ ] Weekly integration check
 - [ ] Done: anyone can open the app, pick a level and play a full game
 - [ ] Stretch: feedback survey

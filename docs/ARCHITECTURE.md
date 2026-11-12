@@ -65,13 +65,19 @@ Bots are created from text specs: `"random"`, `"greedy:randomness=0.3"`, `"minim
 | Method | Path | Owner | Status |
 |---|---|---|---|
 | GET  | `/api/bots` | P5 | working |
-| POST | `/api/games` | P5 | working |
-| GET  | `/api/games/{id}` | P5 | working |
+| GET  | `/api/levels` | P3 + P5 | working (levels from `levels.py`, `available: false` while a bot is a stub) |
+| POST | `/api/games` | P5 | working (`level` picks the bot from `levels.py`; else `bot` spec) |
+| GET  | `/api/games/{id}` | P5 | working (finished games also load from SQLite after a restart) |
 | POST | `/api/games/{id}/move` | P5 | working (bot replies, including extra turns) |
 | GET  | `/api/games/{id}/hint` | P4 + P5 | working (best move, needs a bot search) |
 | GET  | `/api/games/{id}/danger` | P4 + P5 | working (no search, cheap enough for every turn) |
 | GET  | `/api/games/{id}/review` | P4 + P5 | working (finished games, cached per game) |
-| GET  | `/api/players/{id}/stats` | P3 + P5 | to add |
+| GET  | `/api/players/{id}/games` | P5 | working (recent finished games, newest first, `?limit=`) |
+| GET  | `/api/players/{id}/stats` | P3 + P5 | wired: returns 501 until `compute_stats` is implemented |
+
+A bot that still raises `NotImplementedError` never crashes a game: `/api/levels` marks it
+unavailable, and `POST /api/games` answers 501 so the UI can say so. The web app's "Auto" level
+uses `PlayerStats.level` from the stats endpoint, so it switches on when Person 3 ships stats.
 
 `schemas.py` and `web/src/api.ts` must change in the **same PR**. Finished games go to the SQLite
 `games` table (schema in `db.py`). Persons 3 and 4 read from it.

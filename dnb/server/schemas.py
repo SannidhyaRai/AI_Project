@@ -10,10 +10,10 @@ from pydantic import BaseModel, Field
 class NewGameRequest(BaseModel):
     rows: int = Field(3, ge=1, le=7)
     cols: int = Field(3, ge=1, le=7)
-    bot: str = "random"  # bot spec, see dnb/bots/registry.py
-    level: int | None = None  # TODO(P3/P5): when set, pick the bot from dnb.difficulty.levels
+    bot: str = "random"  # bot spec, see dnb/bots/registry.py; ignored when `level` is set
+    level: int | None = None  # difficulty level (dnb.difficulty.levels); overrides `bot`
     human_first: bool = True
-    player_id: str = "guest"
+    player_id: str = Field("guest", min_length=1, max_length=40)
 
 
 class MoveRequest(BaseModel):
@@ -30,6 +30,7 @@ class GameOut(BaseModel):
     rows: int
     cols: int
     bot: str
+    level: int | None = None  # set when the game was started from a difficulty level
     human_player: int
     current_player: int
     moves: list[PlayedMove]
@@ -37,6 +38,38 @@ class GameOut(BaseModel):
     scores: list[int]
     is_over: bool
     winner: int | None
+
+
+class LevelOut(BaseModel):
+    level: int
+    name: str
+    bot: str  # bot spec behind the level
+    available: bool  # False until the bot behind the level is implemented
+
+
+class PlayerStatsOut(BaseModel):
+    """Mirrors dnb.difficulty.stats.PlayerStats (Person 3) plus the player id."""
+
+    player_id: str
+    games_played: int
+    win_rate: float
+    boxes_given_away_per_game: float
+    rating: float
+    level: int  # the level the adjuster recommends next ("Auto" in the picker uses it)
+
+
+class GameSummaryOut(BaseModel):
+    """One finished game in a player's history (profile screen)."""
+
+    id: str
+    bot: str
+    level: int | None
+    rows: int
+    cols: int
+    score_human: int
+    score_bot: int
+    result: float  # for the human: 1 win, 0.5 draw, 0 loss
+    finished_at: str  # UTC, "YYYY-MM-DD HH:MM:SS"
 
 
 class HintOut(BaseModel):

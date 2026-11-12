@@ -86,3 +86,14 @@ def load_game(conn: sqlite3.Connection, game_id: str) -> dict[str, Any] | None:
     game = dict(row)
     game["moves"] = [(player, edge) for player, edge in json.loads(game["moves"])]
     return game
+
+
+def recent_games(conn: sqlite3.Connection, player_id: str, limit: int = 20) -> list[dict[str, Any]]:
+    """A player's finished games, newest first, without the move lists."""
+    rows = conn.execute(
+        "SELECT id, bot_spec, level, rows, cols, score_human, score_bot, result,"
+        " finished_at FROM games WHERE player_id = ? ORDER BY finished_at DESC, rowid DESC"
+        " LIMIT ?",
+        (player_id, limit),
+    ).fetchall()
+    return [dict(row) for row in rows]

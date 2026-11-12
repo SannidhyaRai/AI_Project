@@ -17,6 +17,7 @@ results/
 # Web
 web/node_modules/
 web/dist/
+web/*.tsbuildinfo
 
 # OS / editors
 .DS_Store
